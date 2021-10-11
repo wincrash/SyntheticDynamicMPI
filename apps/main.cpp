@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
       loads.pop_front();
     }
     MPI_Bcast( &mpiLoad.sleepTime,1,MPI_INT,0,mpiInfo.mainComm);
-    std::cout<<"Rank="<<mpiInfo.rank<<" Size="<<mpiInfo.world_size<<" sleep="<<mpiLoad.sleepTime<<"\n";
+    std::cout<<"Name="<<mpiInfo.name<<" Rank="<<mpiInfo.rank<<" Size="<<mpiInfo.world_size<<" sleep="<<mpiLoad.sleepTime<<"\n";
     sleep(mpiLoad.sleepTime);
     ScaleIn(mpiInfo);
   }

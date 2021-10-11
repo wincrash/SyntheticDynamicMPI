@@ -14,6 +14,11 @@ void InitilizeMPI(int argc, char *argv[], MpiInfo &mpiInfo) {
     MPI_Intercomm_merge(mpiInfo.parentComm, 1, &mpiInfo.mainComm);
   MPI_Comm_rank(mpiInfo.mainComm, &mpiInfo.rank);
   MPI_Comm_size(mpiInfo.mainComm, &mpiInfo.world_size);
+
+  int len;
+  char name[MPI_MAX_PROCESSOR_NAME];
+  MPI_Get_processor_name(name, &len);
+  mpiInfo.name=std::string(name);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 std::string CreateHostFile(int count) {
@@ -29,8 +34,9 @@ void ScaleOut(int count, MpiInfo &mpiInfo) {
   if (mpiInfo.MASTER) {
     MPI_Info info = MPI_INFO_NULL;
     MPI_Info_create(&info);
-    MPI_Info_set(info, "add-hostfile", &CreateHostFile(count)[0]);
-    MPI_Comm_spawn(mpiInfo.commandForNewProcess.c_str(), MPI_ARGV_NULL, count, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &mpiInfo.childComm,
+    std::string hostFileName="hostfile";
+    MPI_Info_set(info, "add-hostfile", &hostFileName[0]);
+    MPI_Comm_spawn(mpiInfo.commandForNewProcess.c_str(), MPI_ARGV_NULL, count, info, 0, MPI_COMM_WORLD, &mpiInfo.childComm,
                    MPI_ERRCODES_IGNORE);
     MPI_Intercomm_merge(mpiInfo.childComm, 0, &mpiInfo.mainComm);
     MPI_Comm_rank(mpiInfo.mainComm, &mpiInfo.rank);

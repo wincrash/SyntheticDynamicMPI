@@ -13,6 +13,7 @@ typedef struct {
   MPI_Comm childComm = MPI_COMM_NULL;
   int rank = 0;
   int world_size = 0;
+  std::string name="";
 } MpiInfo;
 
 typedef struct 
