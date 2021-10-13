@@ -1,62 +1,84 @@
 #include "MPIHelpers.hpp"
 #include "SystemCommand.hpp"
+#include <algorithm>
+#include <deque>
+#include <numeric>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <deque>
+#include <vector>
+#include "SystemCommand.hpp"
+void Check(MPI_Comm &comm) {
+  MPI_Barrier(comm);
 
-std::deque<MPILoad> CreateLoad()
-{
-  std::deque<MPILoad> loads;
-  MPILoad l;
-  l.cpu_count=1;
-  l.sleepTime=5;
-  loads.push_back(l);
+  int rank = 0;
+  int world_size = 0;
+  int len;
+  char name[MPI_MAX_PROCESSOR_NAME];
+  MPI_Get_processor_name(name, &len);
+  std::string pavadinimas = std::string(name);
+  MPI_Comm_rank(comm, &rank);
+  MPI_Comm_size(comm, &world_size);
+  std::vector<int> array;
+  array.resize(world_size, -1);
+  MPI_Gather(&rank, 1, MPI_INT, &array[0], 1, MPI_INT, 0, comm);
+  int rez = 0;
+  if (rank == 0)
+    rez = world_size;
+  MPI_Bcast(&rez, 1, MPI_INT, 0, comm);
 
-  
-  l.cpu_count=2;
-  l.sleepTime=4;
-  loads.push_back(l);
-
-  
-  l.cpu_count=3;
-  l.sleepTime=3;
-  loads.push_back(l);
-
-
-  
-  l.cpu_count=4;
-  l.sleepTime=2;
-  loads.push_back(l);
-
-
-  
-  l.cpu_count=5;
-  l.sleepTime=1;
-  loads.push_back(l);
-return loads;
+  if (rank == 0)
+    std::cout << "----------------------------\n";
+  MPI_Barrier(comm);
+  std::cout << "size=" << world_size << " rank=" << rank << " rez=" << rez << "\n";
+  MPI_Barrier(comm);
+  if (rank == 0)
+    std::cout << "----------------------------\n";
+  MPI_Barrier(comm);
 }
 
 int main(int argc, char **argv) {
-  MPILoad mpiLoad;
+
   MpiInfo mpiInfo;
   InitilizeMPI(argc, argv, mpiInfo);
-  std::deque<MPILoad> loads=CreateLoad();
-  while(true)
+
+  int id=0;
+  while(id!=-1)
   {
     if(mpiInfo.MASTER)
     {
-      if(loads.size()==0)
-        break;
-      mpiLoad=loads[0];
-      ScaleOut(loads[0].cpu_count,mpiInfo);
-      loads.pop_front();
+      //std::cin>>id;
+      id=0;
+      std::string res=SystemCommand("curl -s http://localhost:5000/status");
+      std::cout<<"res="<<res<<"\n";
+      if(res.compare("ADD")==0) id=1;
+      if(res.compare("REMOVE")==0) id=-2;
+      if(res.compare("EXIT")==0) id=-1;
     }
-    MPI_Bcast( &mpiLoad.sleepTime,1,MPI_INT,0,mpiInfo.mainComm);
-    std::cout<<"Name="<<mpiInfo.name<<" Rank="<<mpiInfo.rank<<" Size="<<mpiInfo.world_size<<" sleep="<<mpiLoad.sleepTime<<"\n";
-    sleep(mpiLoad.sleepTime);
-    ScaleIn(mpiInfo);
+    MPI_Bcast( &id,1,MPI_INT,0,mpiInfo.mainComm);
+    sleep(1);
+    MPI_Barrier(mpiInfo.mainComm);
+    std::cout<<id<<" "<<mpiInfo.rank<<" "<<mpiInfo.world_size<<"\n";
+    MPI_Barrier(mpiInfo.mainComm);
+    if(id==1)
+    {
+      ScaleOut(1, mpiInfo, "localhost");
+      id=0;
+    }
+    if(id==-2)
+    {
+      ScaleIn(mpiInfo);
+      id=0;
+    }
   }
+
+  while(mpiInfo.world_size!=1)
+  {
+    
+    ScaleIn(mpiInfo); 
+  }
+  std::cout<<"FINAL\n";
   MPI_Finalize();
+  exit(0);
   return 0;
 }
