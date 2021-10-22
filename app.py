@@ -34,7 +34,7 @@ def status():
     if id%2==0:
         return "ADD"
     
-    if id%5==0:
+    if id%3==0:
         return "REMOVE"
     
     

@@ -39,6 +39,8 @@ void Check(MPI_Comm &comm) {
 
 int main(int argc, char **argv) {
 
+std::cout<<"Mano pid="<<  getpid()<<"\n";
+
   MpiInfo mpiInfo;
   InitilizeMPI(argc, argv, mpiInfo);
 
@@ -59,6 +61,7 @@ int main(int argc, char **argv) {
     sleep(1);
     MPI_Barrier(mpiInfo.mainComm);
     std::cout<<id<<" "<<mpiInfo.rank<<" "<<mpiInfo.world_size<<"\n";
+    Check(mpiInfo.mainComm);
     MPI_Barrier(mpiInfo.mainComm);
     if(id==1)
     {
